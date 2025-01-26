@@ -1,23 +1,29 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { canvasImages } from "./canvasImages.js";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-// import data from "./data.js";
 
 function Canvas({ details }) {
   const { startIndex, numImages, duration, size, top, left, zIndex } = details;
-  const [index, setIndex] = useState({ value: startIndex }); // Initialize with a number directly
+
+  const [index, setIndex] = useState({ value: startIndex });
   const canvasRef = useRef(null);
 
   useGSAP(() => {
     gsap.to(index, {
-      value: details.startIndex + details.numImages - 1,
-      duration: details.duration,
+      value: startIndex + numImages - 1,
+      duration: duration,
       repeat: -1,
       ease: "linear",
       onUpdate: () => {
         setIndex({ value: Math.round(index.value) });
       },
+    });
+
+    gsap.from(canvasRef.current, {
+      opacity: 0,
+      duration: 1,
+      ease: "power2.inOut",
     });
   });
 
@@ -25,24 +31,34 @@ function Canvas({ details }) {
     const scale = window.devicePixelRatio;
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    const image = new Image();
-    image.src = canvasImages[index.value]; // Prevent out-of-bound errors
+    const img = new Image();
+    img.src = canvasImages[index.value];
+    img.onload = () => {
+      canvas.width = canvas.offsetWidth * scale;
+      canvas.height = canvas.offsetHeight * scale;
+      canvas.style.width = canvas.offsetWidth + "px";
+      canvas.style.height = canvas.offsetHeight + "px";
 
-    image.onload = () => {
-      canvas.width = image.width * scale;
-      canvas.height = image.height * scale;
-      ctx.drawImage(image, 0, 0);
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, canvas.offsetWidth, canvas.offsetHeight);
     };
-  }, [index]); // Re-run this effect when `index` changes
+  }, [index]);
 
   return (
-    <div>
-      <canvas
-        ref={canvasRef}
-        id="canvas"
-        className={`w-[${size}px] h-[${size}px]`}
-      ></canvas>
-    </div>
+    <canvas
+      data-scroll
+      data-scroll-speed={Math.random().toFixed(1)}
+      ref={canvasRef}
+      className="absolute"
+      style={{
+        width: `${size * 1.8}px`,
+        height: `${size * 1.8}px`,
+        top: `${top}%`,
+        left: `${left}%`,
+        zIndex: `${zIndex}`,
+      }}
+      id="canvas"
+    ></canvas>
   );
 }
 
